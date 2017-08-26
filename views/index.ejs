@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Awesome Messages</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <script src="https://www.gstatic.com/firebasejs/4.0.0/firebase.js"></script>
+    <script>
+      // Initialize Firebase
+      var config = {
+        apiKey: "AIzaSyDYl56vAICeUDeA-KF2hv-PMzfTb04RhXI",
+        authDomain: "awesome-messages.firebaseapp.com",
+        databaseURL: "https://awesome-messages.firebaseio.com",
+        projectId: "awesome-messages",
+        storageBucket: "awesome-messages.appspot.com",
+        messagingSenderId: "647352291102"
+      };
+      firebase.initializeApp(config);
+
+      // We will need a reference to a part of the database anytime we want to
+      // do some DB interactions with Firebase
+      const dbRef = firebase.database().ref('messages');
+      dbRef.on('child_added', function(data){
+        const message = data.val();
+        console.log(message);
+
+        $("#messages").prepend(`
+            <div class="well">
+              <h3>${message.title}</h3>
+              <p>${message.body}</p>
+              <a href='javascript:void(0)' class='btn btn-danger delete-btn' data-id="${data.key}">
+                Delete
+              </a>
+            </div>
+          `);
+      });
+
+      // We wait for the DOM (the HTML page) to be fully loaded before firing
+      // any of our Javascript code
+      $(document).ready(function(){
+        // This will register a delegated event on the `#messages` container.
+        // we need to do this because the links with class `delete-btn` get
+        // added to the page after teh DOM has loaded which means that we can't
+        // attach the events directly on `.delete-btn`
+        $("#messages").on("click", ".delete-btn", function(){
+          const id = $(this).data('id');
+          firebase.database().ref('messages/' + id).remove();
+          $(this).parent().fadeOut();
+        });
+
+        // it's usually preferred to listen to `submit` events on forms instead
+        // of listening on `click` event to its associated submit button
+        $('#message-form').submit(function(event){
+          event.preventDefault();
+          const title = $("#title").val();
+          const body  = $("#body").val();
+
+          // Write Data to Firebase
+          dbRef.push({ title: title, body: body });
+
+          $("#title").val("");
+          $("#body").val("");
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class='container'>
+      <h1>Awesome Messages</h1>
+      <form id='message-form'>
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="body">Message Body</label>
+          <textarea class="form-control" id="body"></textarea>
+        </div>
+        <input type="submit" class="btn btn-primary">
+      </form>
+      <h2>All Messages</h2>
+      <div id="messages"></div>
+    </div>
+
+  </body>
+</html>
